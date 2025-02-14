@@ -7,11 +7,13 @@ import cors from 'cors'; // Handle cross-origin requests
 import OpenAI from 'openai';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import fs from "fs";
+//import * as functions from "firebase-functions";
+import { Buffer } from "buffer";
 
-const serviceAccount = JSON.parse(fs.readFileSync("./firebase-adminsdk.json", "utf8"));
 
 
+
+// Your existing logic...
 
 // Convert __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -20,7 +22,12 @@ const __dirname = path.dirname(__filename);
 // Load environment variables
 dotenv.config();
 
+//adjusted for function firebase_adminsdk_base64
+const serviceAccount = JSON.parse(
+  Buffer.from(process.env.firebase_adminsdk_base64, "base64").toString("utf-8")
+);
 
+//adjusted for function - firebase.bucket
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   storageBucket: process.env.FIREBASE_BUCKET,
@@ -31,14 +38,12 @@ const bucket = admin.storage().bucket();
 app.use(cors()); // Enable CORS
 
 // Configure Multer for file uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-});
+const upload = multer({ storage: multer.memoryStorage() });
 
+// functions.config().openai.api_key
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+    apiKey: process.env.OPENAI_API_KEY,
+  });
 
 async function generateDescription(folderName, urls) {
   console.log(urls);
@@ -244,6 +249,13 @@ app.get('/database-content', async (req, res) => {
   }
 });
 
-// Start the server
+app.post("/upload", async (req, res) => {
+  try {
+    // Handle file upload logic
+    res.status(200).send({ message: "Upload successful!" });
+  } catch (error) {
+    res.status(500).send({ message: "Internal server error." });
+  }
+});
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

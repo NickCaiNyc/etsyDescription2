@@ -1,8 +1,8 @@
 [
   {
-    "origin": ["http://localhost:3000", "http://localhost:5173"],
-    "method": ["GET"],
+    "origin": ["https://api-uwrtbx5ffa-uc.a.run.app", "https://etsydb-fdad2.web.app/", "https://etsydb-fdad2.firebaseapp.com/", "http://localhost:3000"],
+    "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     "maxAgeSeconds": 3600,
-    "responseHeader": ["Content-Type"]
+    "responseHeader": ["Content-Type", "Authorization"]
   }
 ]

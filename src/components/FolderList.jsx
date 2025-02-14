@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import FolderItem from "./FolderItem";
 
+const API_BASE_URL = "https://api-uwrtbx5ffa-uc.a.run.app" 
+
 function FolderList() {
   const [folders, setFolders] = useState({});
 
@@ -10,7 +12,7 @@ function FolderList() {
 
   const fetchDatabaseContent = async () => {
     try {
-      const response = await fetch("http://localhost:3000/database-content");
+      const response = await fetch(`${API_BASE_URL}/database-content`);
       const data = await response.json();
       if (response.ok) {
         setFolders(data);

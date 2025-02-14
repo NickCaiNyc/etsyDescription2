@@ -6,38 +6,67 @@ import crypto from 'crypto'; // For generating unique tokens
 import cors from 'cors'; // Handle cross-origin requests
 import OpenAI from 'openai';
 import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
-import fs from "fs";
-
-const serviceAccount = JSON.parse(fs.readFileSync("./firebase-adminsdk.json", "utf8"));
-
-
-
+import * as functions from "firebase-functions";
+import { Buffer } from "buffer";
+import dotenv from "dotenv";
+import { v4 as uuidv4 } from 'uuid';
+import Busboy from 'busboy';
+// Your existing logic...
+dotenv.config();
 // Convert __dirname for ES modules
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables
-dotenv.config();
 
 
+//adjusted for function firebase_adminsdk_base64
+const serviceAccount = JSON.parse(
+    Buffer.from(process.env.FB_ADMINSDK, "base64").toString("utf-8")
+  );
+  
+
+//adjusted for function - firebase.bucket
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  storageBucket: functions.config().firebase.bucket,
+  storageBucket: process.env.FB_BUCKET,
 });
+
 
 const app = express();
 const bucket = admin.storage().bucket();
-app.use(cors()); // Enable CORS
+const allowedOrigins = ["https://etsydb-fdad2.web.app"];
+//////////////////////////////////////////////////////////////////////////
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+const upload = multer({ storage: multer.memoryStorage() });
+
+
+
+///////////////////////////////////////////////////////////////////////////////
 
 // Configure Multer for file uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-});
+// const upload = multer({
+//   storage: multer.memoryStorage(),
+//   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+// });
 
+// functions.config().openai.api_key
 const openai = new OpenAI({
-    apiKey: functions.config().openai.api_key,
+    apiKey: process.env.OPEN_AI_APIKEY,
   });
 
 async function generateDescription(folderName, urls) {
@@ -115,90 +144,135 @@ async function updateTrackingFile(folderName) {
   }
 }
 
-// Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve the HTML file
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/index.html'));
-});
-
-// Upload endpoint
-app.post('/upload', upload.array('images', 10), async (req, res) => {
+app.post('/process-urls', async (req, res) => {
   try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).send({ message: 'No files uploaded.' });
+    const { folderName, urls } = req.body;
+    if (!urls || !Array.isArray(urls) || urls.length === 0) {
+      return res.status(400).json({ message: 'No URLs provided.' });
     }
+    console.log("Received folderName:", folderName);
+    console.log("Received URLs:", urls);
 
-    const folderName = req.body.folderName || `group-${Date.now()}`;
-    const urls = [];
-
-    for (const file of req.files) {
-      const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-      const fileName = `${folderName}/${uniqueSuffix}-${file.originalname}`;
-      const blob = bucket.file(fileName);
-
-      const token = crypto.randomBytes(16).toString('hex'); // Generate a unique token
-
-      const blobStream = blob.createWriteStream({
-        metadata: {
-          contentType: file.mimetype,
-          metadata: {
-            firebaseStorageDownloadTokens: token, // Add token
-          },
-        },
-      });
-
-      await new Promise((resolve, reject) => {
-        blobStream.on('error', reject);
-        blobStream.on('finish', () => {
-          const encodedPath = encodeURIComponent(fileName);
-          const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media&token=${token}`;
-          urls.push(publicUrl);
-          resolve();
-        });
-        blobStream.end(file.buffer);
-      });
-    }
-
-    // Generate description using ChatGPT
+    // Generate a description based on the file URLs
     const description = await generateDescription(folderName, urls);
-    console.log(description);
+    console.log("Generated description:", description);
 
-    // Save the description to a `description.txt` file in the same folder
-    const descriptionToken = crypto.randomBytes(16).toString('hex'); // Token for description
+    // Save the description to Firebase Storage in the given folder
+    const descriptionToken = crypto.randomBytes(16).toString('hex');
     const descriptionFile = bucket.file(`${folderName}/description.txt`);
-
     await descriptionFile.save(description, {
       contentType: 'text/plain',
-      metadata: {
-        metadata: {
-          firebaseStorageDownloadTokens: descriptionToken, // Add token
-        },
-      },
+      metadata: { metadata: { firebaseStorageDownloadTokens: descriptionToken } },
     });
-
     const descriptionUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(
       `${folderName}/description.txt`
     )}?alt=media&token=${descriptionToken}`;
 
-    console.log(`Description saved to ${folderName}/description.txt`);
-
     // Update the tracking file
     await updateTrackingFile(folderName);
 
-    res.status(200).send({
-      message: 'Files uploaded successfully.',
+    res.status(200).json({
+      message: 'Processing complete.',
+      folderName,
       urls,
       descriptionUrl,
       description,
     });
   } catch (error) {
-    console.error('Error during upload:', error.message);
-    res.status(500).send({ message: 'Internal server error.' });
+    console.error("Error processing URLs:", error.message);
+    res.status(500).json({ message: 'Internal server error processing URLs.', error: error.message });
   }
 });
-
+// Upload endpoint
+// app.post("/upload", upload.array("images", 10), async (req, res) => {
+//     try {
+//       console.log("🔵 Upload request received!");
+  
+//       if (!req.files || req.files.length === 0) {
+//         console.warn("⚠️ No files uploaded.");
+//         return res.status(400).json({ message: "No files uploaded." });
+//       }
+  
+//       console.log(`🟢 ${req.files.length} file(s) received.`);
+//       console.log("Request Body:", req.body); // ✅ Log incoming request body
+  
+//       const folderName = req.body.folderName || `group-${Date.now()}`;
+//       const urls = [];
+  
+//       for (const file of req.files) {
+//         console.log(`🟡 Processing file: ${file.originalname}`);
+  
+//         const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
+//         const fileName = `${folderName}/${uniqueSuffix}-${file.originalname}`;
+//         const blob = bucket.file(fileName);
+//         const token = crypto.randomBytes(16).toString("hex");
+  
+//         const blobStream = blob.createWriteStream({
+//           metadata: {
+//             contentType: file.mimetype,
+//             metadata: { firebaseStorageDownloadTokens: token },
+//           },
+//         });
+  
+//         await new Promise((resolve, reject) => {
+//           blobStream.on("error", (error) => {
+//             console.error("🔴 BlobStream Error:", error.message);
+//             reject(error);
+//           });
+  
+//           blobStream.on("finish", () => {
+//             const encodedPath = encodeURIComponent(fileName);
+//             const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media&token=${token}`;
+//             urls.push(publicUrl);
+//             console.log(`✅ File uploaded: ${publicUrl}`);
+//             resolve();
+//           });
+  
+//           blobStream.end(file.buffer);
+//         });
+//       }
+  
+//       console.log("✅ All files uploaded successfully!");
+  
+//       // ✅ Debug ChatGPT API call
+//       console.log("🔵 Sending request to ChatGPT...");
+//       const description = await generateDescription(folderName, urls);
+      
+//       if (!description) {
+//         console.error("🔴 ChatGPT returned an empty description.");
+//         return res.status(500).json({ message: "ChatGPT failed to generate description." });
+//       }
+  
+//       console.log("🟢 ChatGPT description generated:", description);
+  
+//       // ✅ Save description in Firebase Storage
+//       const descriptionToken = crypto.randomBytes(16).toString("hex");
+//       const descriptionFile = bucket.file(`${folderName}/description.txt`);
+  
+//       await descriptionFile.save(description, {
+//         contentType: "text/plain",
+//         metadata: { metadata: { firebaseStorageDownloadTokens: descriptionToken } },
+//       });
+  
+//       const descriptionUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(
+//         `${folderName}/description.txt`
+//       )}?alt=media&token=${descriptionToken}`;
+  
+//       console.log(`✅ Description saved to: ${descriptionUrl}`);
+  
+//       res.status(200).json({
+//         message: "Files uploaded successfully!",
+//         urls,
+//         descriptionUrl,
+// //         description,
+//       });
+//     } catch (error) {
+//       console.error("🔴 Upload Error:", error.message);
+//       res.status(500).json({ message: "Internal server error.", error: error.message });
+//     }
+//   });
+  
 // Database content endpoint
 app.get('/database-content', async (req, res) => {
   try {
@@ -244,6 +318,18 @@ app.get('/database-content', async (req, res) => {
   }
 });
 
-// Start the server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+
+  
+
+// Serve static files
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve the HTML file
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
+
+export const api = functions.https.onRequest(app);
+
+
