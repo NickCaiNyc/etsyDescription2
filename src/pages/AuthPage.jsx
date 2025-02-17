@@ -7,10 +7,7 @@ const AuthPage = () => {
 
   return (
     <div className="auth-container">
-      <h2>{isSignUp ? "Sign Up" : "Sign In"}</h2>
       {isSignUp ? <FirebaseSignUp /> : <FirebaseLogin />}
-
-      {/* 🔥 Fix: Make the toggle clickable */}
       <p 
         onClick={() => setIsSignUp(!isSignUp)} 
         style={{ cursor: "pointer", color: "blue", textDecoration: "underline", marginTop: "20px" }}

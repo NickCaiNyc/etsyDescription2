@@ -1,26 +1,54 @@
-/* General styles */
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #f8f9fa;
+/* ======= Global Styles & CSS Variables ======= */
+:root {
+  --primary-color: #4fa3d1;
+  --accent-color: #61dafb;
+  --dark-bg: #282c34;
+  --light-bg: #ffffff;
+  --text-color: #333;
+  --shadow-light: rgba(0, 0, 0, 0.1);
+  --shadow-medium: rgba(0, 0, 0, 0.2);
 }
 
-/* Header styles */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  color: var(--text-color);
+}
+
+/* ======= Container & Layout ======= */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.main-content {
+  background: var(--light-bg);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px var(--shadow-light);
+  padding: 30px;
+  margin: 30px 0;
+}
+
+/* ======= Header ======= */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
-  background-color: #282c34;
-  color: white;
+  padding: 20px 30px;
+  background-color: var(--dark-bg);
+  color: var(--accent-color);
+  box-shadow: 0 4px 8px var(--shadow-medium);
 }
 
 .header h1 {
   margin: 0;
+  font-size: 28px;
+  letter-spacing: 1px;
 }
 
-/* Authentication Section */
 .auth-section {
   display: flex;
   align-items: center;
@@ -28,20 +56,215 @@ body {
 
 .user-email {
   margin-right: 15px;
-  font-size: 14px;
+  font-size: 16px;
+  color: var(--accent-color);
 }
 
 .auth-button {
-  padding: 8px 15px;
-  font-size: 14px;
+  padding: 10px 20px;
+  font-size: 16px;
   cursor: pointer;
   border: none;
   border-radius: 5px;
-  background-color: #61dafb;
-  color: black;
-  transition: background-color 0.3s;
+  background-color: var(--accent-color);
+  color: var(--dark-bg);
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .auth-button:hover {
-  background-color: #4fa3d1;
+  background-color: var(--primary-color);
+  transform: scale(1.05);
+}
+
+/* ======= Loader ======= */
+.loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner {
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid var(--primary-color);
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+
+/* ======= Button Styles (Reusable) ======= */
+.button {
+  display: inline-block;
+  padding: 12px 20px;
+  margin: 10px 5px;
+  font-size: 16px;
+  color: var(--light-bg);
+  background-color: var(--primary-color);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.button:hover {
+  background-color: var(--accent-color);
+  transform: translateY(-2px);
+}
+
+/* ======= Form & Input Styling ======= */
+input, textarea, select {
+  width: 100%;
+  padding: 12px 15px;
+  margin: 8px 0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box;
+  font-size: 16px;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 8px var(--shadow-light);
+}
+
+/* ======= Divider ======= */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #ccc;
+}
+
+.divider:not(:empty)::before {
+  margin-right: 0.5em;
+}
+
+.divider:not(:empty)::after {
+  margin-left: 0.5em;
+}
+
+.divider span {
+  font-size: 14px;
+  color: var(--text-color);
+}
+
+/* ======= Firebase Login Component ======= */
+.firebase-login-container {
+  max-width: 400px;
+  margin: 50px auto;
+  padding: 40px;
+  background-color: var(--light-bg);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px var(--shadow-light);
+  text-align: center;
+}
+
+.firebase-login-container h2 {
+  margin-bottom: 20px;
+  color: var(--dark-bg);
+  font-size: 24px;
+}
+
+.google-btn, .email-toggle-btn, .login-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  margin-bottom: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+/* Google button */
+.google-btn {
+  background-color: #db4437; /* Google red */
+  color: #fff;
+}
+
+.google-btn:hover {
+  background-color: #c33d2e;
+  transform: scale(1.03);
+}
+
+/* Email toggle button */
+.email-toggle-btn {
+  background-color: var(--accent-color);
+  color: var(--dark-bg);
+}
+
+.email-toggle-btn:hover {
+  background-color: var(--primary-color);
+  transform: scale(1.03);
+}
+
+/* Login button */
+.login-btn {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+.login-btn:hover {
+  background-color: var(--accent-color);
+  transform: translateY(-2px);
+}
+
+/* Email Login Form specific styling */
+.email-login-form .input-field {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.email-login-form .input-field:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+/* ======= Responsive Adjustments ======= */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .auth-section {
+    margin-top: 10px;
+  }
+}
+
+.outer-wrapper {
+  display: flex;            /* Use flex to center the child horizontally */
+  justify-content: center;  /* Horizontally center the child element */
+  margin: 40px 0;           /* Optional vertical spacing */
+}
+
+/* This is your “box” that appears centered on the page */
+.centered-box {
+  background-color: #ffffff;
+  max-width: 900px;         /* Set a max width so it doesn’t stretch too wide */
+  width: 100%;              /* Allows it to shrink on smaller screens */
+  padding: 30px;            /* Space inside the box */
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-align: left;         /* Ensure content inside remains left-aligned */
 }

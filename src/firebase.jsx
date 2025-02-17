@@ -6,13 +6,14 @@ import { getStorage } from "firebase/storage";
 // Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDdFcZhJX05otaqZmYhrLbjKkRJ5a_ZeaE",
-  authDomain: "etsydb-fdad2.firebaseapp.app",
+  authDomain: "etsydb-fdad2.firebaseapp.com",
   projectId: "etsydb-fdad2",
-  storageBucket: "etsydb-fdad2.appspot.com", 
+  storageBucket: "etsydb-fdad2.firebasestorage.app",
   messagingSenderId: "686661160483",
   appId: "1:686661160483:web:98fc5c4d5f907080f0eb96",
-  measurementId: "G-LVMPR30ZK1",
+  measurementId: "G-LVMPR30ZK1"
 };
+
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

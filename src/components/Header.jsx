@@ -16,7 +16,7 @@ function Header({ user }) {
   return (
     <header className="header">
       <Link to="/" className="logo">
-        <h1>Upload Images & Get an Etsy Description</h1>
+        <h1>Snaptext.ai</h1>
       </Link>
 
       <div className="auth-section">
@@ -26,6 +26,9 @@ function Header({ user }) {
             <button className="auth-button logout-button" onClick={handleLogout}>
               Logout
             </button>
+            <Link to="/upload">
+              <button className="auth-button logout-button">Description</button>
+            </Link>
           </>
         ) : <></>}
       </div>
